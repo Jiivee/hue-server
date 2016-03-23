@@ -6,9 +6,10 @@ var request = require('request');
 /* GET users listing. */
 router.post('/', function(req, res, next) {
   res.send('respond with a resource');
-  var hue = req.body.hue;
-  var brightness = req.body.brightness;
-  var saturation = req.body.saturation;
+  console.log(req.body);
+  var hue = parseInt(req.body.hue);
+  var brightness = parseInt(req.body.brightness);
+  var saturation = parseInt(req.body.saturation);
   var data = {
     "on":true,
     "sat": saturation,
@@ -35,6 +36,22 @@ router.get('/', function(req, res, next) {
   request({
     method: 'GET',
     uri: 'http://192.168.1.7/api/GYRwirkQ698vzLpqkUe-gEu2wkWMxPZg6bjzZukI/lights/6'
+  },
+  function (error, response, body) {
+    //console.log(response);
+    if (!error && response.statusCode == 200) {
+      //console.log(body); // Print the google web page.
+      res.send(body);
+    }
+  });
+});
+
+router.get('/status/all', function(req, res, next) {
+  //res.send('respond with a resource');
+
+  request({
+    method: 'GET',
+    uri: 'http://192.168.1.7/api/GYRwirkQ698vzLpqkUe-gEu2wkWMxPZg6bjzZukI/lights'
   },
   function (error, response, body) {
     //console.log(response);

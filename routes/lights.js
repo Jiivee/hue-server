@@ -37,7 +37,7 @@ router.get('/', function(req, res, next) {
 
   request({
     method: 'GET',
-    uri: constants.address + constants.token + '/lights/6'
+    uri: constants.address + constants.token + 'lights/6'
   },
   function (error, response, body) {
     //console.log(response);
@@ -53,7 +53,7 @@ router.get('/status/all', function(req, res, next) {
 
   request({
     method: 'GET',
-    uri: constants.address + constants.token + '/lights'
+    uri: constants.address + constants.token + 'lights'
   },
   function (error, response, body) {
     //console.log(response);

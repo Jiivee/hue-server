@@ -2,6 +2,8 @@ var express = require('express');
 var router = express.Router();
 var request = require('request');
 
+var constants = require('../constants');
+
 var lastMovement;
 var movement;
 var lightOn = false;
@@ -9,7 +11,7 @@ var timeNow;
 
 
 //These can be changed by the user
-var lightTime = 10000;
+var lightTime = 5000;
 var motionStatus = true;
 
 var dataOn = {
@@ -24,6 +26,7 @@ var dataOff = {
 router.post('/', function(req, res, next) {
   res.send('Motion message received');
   var on = parseInt(req.body.on);
+  console.log(on);
   if (on === 1) {
     movement = true;
     if (lightOn === false) {
@@ -49,8 +52,6 @@ router.post('/lighttime', function(req, res, next) {
 router.post('/status', function(req, res, next) {
   res.send('Motion message received');
   motionStatus = req.body.motionStatus;
-  console.log(motionStatus);
-  console.log(motionStatus === true);
 });
 
 
@@ -69,14 +70,10 @@ function sendData(data) {
     request({
       method: 'PUT',
       body: data,
-      uri: constants.address + constants.token + '6/state'
+      uri: constants.address + constants.token + 'lights/6/state'
     },
     function (error, response, body) {
-      //console.log(response);
-      if (!error && response.statusCode == 200) {
-        //console.log(body); // Print the google web page.
-        console.log();
-      }
+      //console.log(response.body);
     });
   }
 }

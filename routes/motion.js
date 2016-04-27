@@ -55,7 +55,6 @@ router.post('/status', function(req, res, next) {
 
 
 var timer = setInterval(function() {
-  console.log(lightTime);
   timeNow = Date.now();
   if (timeNow - lastMovement > lightTime && movement === false) {
     sendData(dataOff);
@@ -70,7 +69,7 @@ function sendData(data) {
     request({
       method: 'PUT',
       body: data,
-      uri: 'http://192.168.1.7/api/GYRwirkQ698vzLpqkUe-gEu2wkWMxPZg6bjzZukI/lights/6/state'
+      uri: constants.address + constants.token + '6/state'
     },
     function (error, response, body) {
       //console.log(response);

@@ -1,6 +1,8 @@
 var express = require('express');
 var router = express.Router();
-var request = require('request');
+var request = require('request')
+
+var constants = require('../constants');
 
 
 /* GET users listing. */
@@ -20,7 +22,7 @@ router.post('/', function(req, res, next) {
   request({
     method: 'PUT',
     body: JSON.stringify(data),
-    uri: 'http://192.168.1.7/api/GYRwirkQ698vzLpqkUe-gEu2wkWMxPZg6bjzZukI/lights/6/state'
+    uri: constants.address + constants.token + 'lights/6/state'
   },
   function (error, response, body) {
     //console.log(response);
@@ -35,7 +37,7 @@ router.get('/', function(req, res, next) {
 
   request({
     method: 'GET',
-    uri: 'http://192.168.1.7/api/GYRwirkQ698vzLpqkUe-gEu2wkWMxPZg6bjzZukI/lights/6'
+    uri: constants.address + constants.token + '/lights/6'
   },
   function (error, response, body) {
     //console.log(response);
@@ -51,7 +53,7 @@ router.get('/status/all', function(req, res, next) {
 
   request({
     method: 'GET',
-    uri: 'http://192.168.1.7/api/GYRwirkQ698vzLpqkUe-gEu2wkWMxPZg6bjzZukI/lights'
+    uri: constants.address + constants.token + '/lights'
   },
   function (error, response, body) {
     //console.log(response);

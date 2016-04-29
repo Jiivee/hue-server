@@ -12,24 +12,27 @@ router.post('/', function(req, res, next) {
   var hue = parseInt(req.body.hue);
   var brightness = parseInt(req.body.brightness);
   var saturation = parseInt(req.body.saturation);
-  var data = {
-    "on":true,
-    "sat": saturation,
-    "bri": brightness,
-    "hue": hue
-  };
+  var lights = req.body.lights;
+  for(i = 0; i < lights.length; i++){
+    var data = {
+      "on":true,
+      "sat": saturation,
+      "bri": brightness,
+      "hue": hue
+    };
 
-  request({
-    method: 'PUT',
-    body: JSON.stringify(data),
-    uri: constants.address + constants.token + 'lights/6/state'
-  },
-  function (error, response, body) {
-    //console.log(response);
-    if (!error && response.statusCode == 200) {
-      //console.log(body); // Print the google web page.
-    }
-  });
+    request({
+      method: 'PUT',
+      body: JSON.stringify(data),
+      uri: constants.address + constants.token + 'lights/'+lights[i]+'/state'
+    },
+    function (error, response, body) {
+      //console.log(response);
+      if (!error && response.statusCode == 200) {
+        //console.log(body); // Print the google web page.
+      }
+    });
+  }
 });
 
 router.get('/', function(req, res, next) {

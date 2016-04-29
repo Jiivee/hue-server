@@ -13,6 +13,7 @@ var timeNow;
 //These can be changed by the user
 var lightTime = 5000;
 var motionStatus = true;
+var motionSetting = "timer" ##Timer or switch
 
 var dataOn = {
   "on": true
@@ -33,6 +34,12 @@ router.post('/', function(req, res, next) {
       sendData(dataOn);
       lightOn = true;
     }
+    else{
+      if(motionSetting === "switch" && Date.now() - lastMovement > 2000){
+        sendData(dataOff);
+        lightOn = false;
+      }
+    }
   }
   else {
     lastMovement = Date.now();
@@ -40,6 +47,18 @@ router.post('/', function(req, res, next) {
   }
 });
 
+/*Get motion setting */
+router.post('/motionSetting', function(req, res, next) {
+  newSetting = req.body.motionSetting;
+  if(newSetting === "timer" || newSetting === "switch"){
+    motionSetting = newSetting;
+    res.send('Motion setting received');
+  }
+  else{
+    res.send('Motion setting '+newSetting+ " is not recognized");
+  }
+  
+})
 
 /* Get motion interval */
 router.post('/lighttime', function(req, res, next) {
@@ -57,7 +76,7 @@ router.post('/status', function(req, res, next) {
 
 var timer = setInterval(function() {
   timeNow = Date.now();
-  if (timeNow - lastMovement > lightTime && movement === false) {
+  if (timeNow - lastMovement > lightTime && movement === false && motionSetting === "timer") {
     sendData(dataOff);
     lightOn = false;
   }

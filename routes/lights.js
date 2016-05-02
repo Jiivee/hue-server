@@ -5,6 +5,7 @@ var request = require('request')
 var constants = require('../constants');
 
 
+
 /* GET users listing. */
 router.post('/', function(req, res, next) {
   res.send('respond with a resource');
@@ -15,32 +16,46 @@ router.post('/', function(req, res, next) {
   var lights = req.body.lights;
   for(i = 0; i < lights.length; i++){
     var data = {
-      "on":true,
       "sat": saturation,
       "bri": brightness,
       "hue": hue
     };
 
-    request({
-      method: 'PUT',
-      body: JSON.stringify(data),
-      uri: constants.address + constants.token + 'lights/'+lights[i]+'/state'
-    },
-    function (error, response, body) {
-      //console.log(response);
-      if (!error && response.statusCode == 200) {
-        //console.log(body); // Print the google web page.
-      }
-    });
+    sendLightData(data, lights[i]);
   }
 });
 
-router.get('/', function(req, res, next) {
+router.post('/status', function(req, res, next) {
+  var lights = req.body.lights;
+  var data = {
+    "on": req.body.on
+  }
+  lights.forEach(function(light) {
+    sendLightData(data, light);
+  })
+  res.send("light status updated");
+})
+
+var sendLightData = function(data, lightNumber) {
+  request({
+    method: 'PUT',
+    body: JSON.stringify(data),
+    uri: constants.address + constants.token + 'lights/' + lightNumber + '/state'
+  },
+  function (error, response, body) {
+    //console.log(response);
+    if (!error && response.statusCode == 200) {
+      //console.log(body); // Print the google web page.
+    }
+  });
+}
+
+router.get('/:lightNumber', function(req, res, next) {
   //res.send('respond with a resource');
 
   request({
     method: 'GET',
-    uri: constants.address + constants.token + 'lights/6'
+    uri: constants.address + constants.token + 'lights/' + req.params.lightNumber
   },
   function (error, response, body) {
     //console.log(response);
@@ -66,5 +81,6 @@ router.get('/status/all', function(req, res, next) {
     }
   });
 });
+
 
 module.exports = router;

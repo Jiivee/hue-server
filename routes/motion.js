@@ -11,8 +11,8 @@ var timeNow;
 
 //These can be changed by the user
 var lightTime = 5000;
-var motionStatusList = [true, true, true, true, true, true];
-var motionSetting = "switch" //Timer or switch
+var motionStatusList = [null, true, true, true, true, true, true];
+var motionType = "switch" //Timer or switch
 
 var dataOn = {
   "on": true
@@ -30,7 +30,8 @@ var isLightOn = function(lightNumber) {
   function (error, response, body) {
     if (!error && response.statusCode == 200) {
       //console.log(body); // Print the google web page.
-      if(body.on) {
+      var lightBody = JSON.parse(body);
+      if(lightBody.state.on) {
         console.log('Valo '+lightNumber+' on päällä');
         return true;
       }
@@ -45,39 +46,57 @@ var isLightOn = function(lightNumber) {
   });
 }
 
-/* Get motion status */
+/*
+Handles the motion sensor post requests from Rasperry Pi
+*/
 router.post('/', function(req, res, next) {
   res.send('Motion message received');
   var on = parseInt(req.body.on);
   console.log("Current motion status: "+on);
-  if (on === 1) {
-    movement = true;
-    for(lightNumber = 0; lightNumber < motionStatusList.length; lightNumber++){
+  if (on === 1) { //Motion started
+    movement = true; //Used in timer below
+
+    //Check if motion enabled for each light and if light should be switched on or off
+    for(lightNumber = 1; lightNumber < motionStatusList.length; lightNumber++){
       console.log("looping througs lights, current: "+lightNumber);
       console.log("motion status "+motionStatusList[lightNumber] );
-      if(motionStatusList[lightNumber] && !isLightOn(lightNumber+1)){
-        sendData(dataOn, lightNumber+1); //Philips hue lights are numbered 1-6
+      //If motion is enabled for lamp and lamp is not on, it is switched on
+      if(motionStatusList[lightNumber] && !isLightOn(lightNumber)){
+        sendData(dataOn, lightNumber); //Philips hue lights are numbered 1-6
       }
-      else if(motionStatusList[lightNumber] && motionSetting === "switch" && Date.now() - lastMovement > 2000 && (lightNumber)){
+      //If timer setting is used, the lamp is switched off from the timer function below
+      //Light is not switched off if it is less than two seconds since previous movement to prevent accidental constant switching on and off
+      else if(motionStatusList[lightNumber] && motionType === "switch" && Date.now() - lastMovement > 2000 && isLightOn(lightNumber)){
         sendData(dataOff);
       }
     }
   }
-  else {
+  else { //Motion stopped
     lastMovement = Date.now();
     movement = false;
   }
 });
+//Timer checks every two seconds if light should be switched off
+//Light is switched off if more than 'lightTime' amount of time has passed since previous movement
+var timer = setInterval(function() {
+  timeNow = Date.now();
+  for(lightNumber = 1; lightNumber < motionStatusList.length; lightNumber++){
+    if (timeNow - lastMovement > lightTime && movement === false && motionType === "timer" && motionStatusList[lightNumber] && isLightOn[lightNumber]) {
+      sendData(dataOff, lightNumber);
+    }
+  }
+}, 2000); //Two seconds
 
 /*Get motion setting */
-router.post('/motionSetting', function(req, res, next) {
-  newSetting = req.body.motionSetting;
-  if(newSetting === "timer" || newSetting === "switch"){
-    motionSetting = newSetting;
-    res.send('Motion setting received');
+router.post('/motionType', function(req, res, next) {
+  newType = req.body.motionType;
+  if(newType === "timer" || newType === "switch"){
+    motionType = newType;
+    console.log("New motion type: " + motionType);
+    res.send('Motion type received');
   }
   else{
-    res.send('Motion setting '+newSetting+ " is not recognized");
+    res.send('Motion type '+newType+ " is not recognized");
   }
 
 })
@@ -94,29 +113,24 @@ router.post('/status', function(req, res, next) {
   res.send('Motion message received');
   lightNumberList = req.body.lights;
   motionStatus = req.body.motionStatus;
+  console.log('motion status: '+motionStatus);
   lightNumberList.forEach(function(lightNumber) {
-    if(motionStatus === 'true'){
-      motionStatusList[lightNumber-1] = true;
+    if(motionStatus){
+      motionStatusList[lightNumber] = true;
     }
     else {
-      motionStatusList[lightNumber-1] = false;
+      motionStatusList[lightNumber] = false;
     }
   })
+  console.log('Updated motion status list: '+motionStatusList);
 });
 
 
-var timer = setInterval(function() {
-  timeNow = Date.now();
-  for(lightNumber = 0; lightNumber < motionStatusList.length; lightNumber++){
-    if (timeNow - lastMovement > lightTime && movement === false && motionSetting === "timer" && motionStatusList(lightNumber) && isLightOn(lightNumber+1)) {
-      sendData(dataOff, lightNumber);
-    }
-  }
-}, 2000);
+
 
 
 function sendData(data, lightNumber) {
-  if (motionStatus === true) {
+  if (motionStatusList[lightNumber] === true) {
     data = JSON.stringify(data);
     console.log("Sending data to lamp: "+data);
     request({

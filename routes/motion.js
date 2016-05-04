@@ -11,7 +11,7 @@ var timeNow;
 
 //These can be changed by the user
 var lightTime = 5000;
-var motionStatusList = [null, true, true, true, true, true, true];
+var motionStatusList = [null, true, true, true, true, true, true]; //There is no lamp 0
 var motionType = "switch" //Timer or switch
 
 var dataOn = {
@@ -22,7 +22,7 @@ var dataOff = {
   "on": false
 };
 
-var isLightOn = function(lightNumber) {
+var checkAndSwicthLight = function(lightNumber) {
   request({
     method: 'GET',
     uri: constants.address + constants.token + 'lights/' + lightNumber
@@ -31,20 +31,23 @@ var isLightOn = function(lightNumber) {
     if (!error && response.statusCode == 200) {
       //console.log(body); // Print the google web page.
       var lightBody = JSON.parse(body);
+      console.log('light state: '+ lightBody.state.on);
       if(lightBody.state.on) {
-        console.log('Valo '+lightNumber+' on päällä');
-        return true;
+        if(motionType === 'switch' && Date.now() - lastMovement > 2000) {
+          console.log('Light '+lightNumber+' is switched off');
+          sendData(dataOff, lightNumber);
+        }
       }
       else {
-        console.log('Valo '+lightNumber+' ei ole päällä');
-        return false;
+        console.log('Light '+lightNumber+' is switched on');
+        sendData(dataOn, lightNumber);
       }
     }
-    else{
-      console.log("Tapahtui virhe, response code: "+response.statusCode);
+    else {
+      console.log('Error with, response code: '+response.statusCode);
     }
   });
-}
+};
 
 /*
 Handles the motion sensor post requests from Rasperry Pi
@@ -58,17 +61,13 @@ router.post('/', function(req, res, next) {
 
     //Check if motion enabled for each light and if light should be switched on or off
     for(lightNumber = 1; lightNumber < motionStatusList.length; lightNumber++){
-      console.log("looping througs lights, current: "+lightNumber);
-      console.log("motion status "+motionStatusList[lightNumber] );
       //If motion is enabled for lamp and lamp is not on, it is switched on
-      if(motionStatusList[lightNumber] && !isLightOn(lightNumber)){
-        sendData(dataOn, lightNumber); //Philips hue lights are numbered 1-6
+      if(motionStatusList[lightNumber]){
+        //If timer setting is used, the lamp is switched off from the timer function below
+        //Light is not switched off if it is less than two seconds since previous movement to prevent accidental constant switching on and off
+        checkAndSwicthLight(lightNumber);
       }
-      //If timer setting is used, the lamp is switched off from the timer function below
-      //Light is not switched off if it is less than two seconds since previous movement to prevent accidental constant switching on and off
-      else if(motionStatusList[lightNumber] && motionType === "switch" && Date.now() - lastMovement > 2000 && isLightOn(lightNumber)){
-        sendData(dataOff);
-      }
+
     }
   }
   else { //Motion stopped
@@ -81,13 +80,13 @@ router.post('/', function(req, res, next) {
 var timer = setInterval(function() {
   timeNow = Date.now();
   for(lightNumber = 1; lightNumber < motionStatusList.length; lightNumber++){
-    if (timeNow - lastMovement > lightTime && movement === false && motionType === "timer" && motionStatusList[lightNumber] && isLightOn[lightNumber]) {
+    if (timeNow - lastMovement > lightTime && movement === false && motionType === "timer" && motionStatusList[lightNumber]) {
       sendData(dataOff, lightNumber);
     }
   }
 }, 2000); //Two seconds
 
-/*Get motion setting */
+/*Get motion type */
 router.post('/motionType', function(req, res, next) {
   newType = req.body.motionType;
   if(newType === "timer" || newType === "switch"){
@@ -96,7 +95,7 @@ router.post('/motionType', function(req, res, next) {
     res.send('Motion type received');
   }
   else{
-    res.send('Motion type '+newType+ " is not recognized");
+    res.send('Motion type '+newType+ ' is not recognized');
   }
 
 })
@@ -104,8 +103,8 @@ router.post('/motionType', function(req, res, next) {
 /* Get motion interval */
 router.post('/lighttime', function(req, res, next) {
   res.send('Motion message received');
-  lightTime = parseInt(req.body.lighttime);
-
+  lightTime = parseInt(req.body.lighttime)*1000*60; //Minutes
+  console.log('New lighttime: '+ lightTime)
 });
 
 /* Get motion on (true) or off (false) */
@@ -113,7 +112,6 @@ router.post('/status', function(req, res, next) {
   res.send('Motion message received');
   lightNumberList = req.body.lights;
   motionStatus = req.body.motionStatus;
-  console.log('motion status: '+motionStatus);
   lightNumberList.forEach(function(lightNumber) {
     if(motionStatus){
       motionStatusList[lightNumber] = true;
@@ -125,14 +123,30 @@ router.post('/status', function(req, res, next) {
   console.log('Updated motion status list: '+motionStatusList);
 });
 
+/*
+Get current motionStatus
+*/
+router.get('/motionStatus/:lightNumber', function(req, res, next) {
+  var data = {
+    'status': motionStatusList[req.params.lightNumber]
+  };
+  res.send(data);
+});
 
-
+/*
+Get current motionType
+*/
+router.get('/motiontype', function(req, res, next) {
+  var data = {
+    'type': motionType
+  };
+  res.send(data);
+});
 
 
 function sendData(data, lightNumber) {
   if (motionStatusList[lightNumber] === true) {
     data = JSON.stringify(data);
-    console.log("Sending data to lamp: "+data);
     request({
       method: 'PUT',
       body: data,

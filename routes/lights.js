@@ -6,14 +6,14 @@ var constants = require('../constants');
 
 
 
-/* GET users listing. */
+/* Set new values for light */
 router.post('/', function(req, res, next) {
-  res.send('respond with a resource');
+  res.send('Light data received');
   console.log(req.body);
   var hue = parseInt(req.body.hue);
   var brightness = parseInt(req.body.brightness);
   var saturation = parseInt(req.body.saturation);
-  var lights = req.body.lights;
+  var lights = req.body.lights; //List of affected lights
   for(i = 0; i < lights.length; i++){
     var data = {
       "sat": saturation,
@@ -25,8 +25,9 @@ router.post('/', function(req, res, next) {
   }
 });
 
+//Switch lights on or off
 router.post('/status', function(req, res, next) {
-  var lights = req.body.lights;
+  var lights = req.body.lights; //List of affected lights
   var data = {
     "on": req.body.on
   }
@@ -36,6 +37,9 @@ router.post('/status', function(req, res, next) {
   res.send("light status updated");
 })
 
+/*
+Send new light data to Philipsp Hue lamps
+*/
 var sendLightData = function(data, lightNumber) {
   request({
     method: 'PUT',
@@ -43,32 +47,29 @@ var sendLightData = function(data, lightNumber) {
     uri: constants.address + constants.token + 'lights/' + lightNumber + '/state'
   },
   function (error, response, body) {
-    //console.log(response);
     if (!error && response.statusCode == 200) {
-      //console.log(body); // Print the google web page.
+      //console.log(body);
     }
   });
 }
 
+/* Get status of certain light */
 router.get('/:lightNumber', function(req, res, next) {
-  //res.send('respond with a resource');
-
   request({
     method: 'GET',
     uri: constants.address + constants.token + 'lights/' + req.params.lightNumber
   },
   function (error, response, body) {
-    //console.log(response);
     if (!error && response.statusCode == 200) {
-      //console.log(body); // Print the google web page.
       res.send(body);
     }
   });
 });
 
+/*
+Get status of all lamps
+*/
 router.get('/status/all', function(req, res, next) {
-  //res.send('respond with a resource');
-
   request({
     method: 'GET',
     uri: constants.address + constants.token + 'lights'

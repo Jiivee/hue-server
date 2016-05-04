@@ -1,4 +1,4 @@
-##Web page for Philips Hue lights and Raspberry Pi IoT project
+##Node.js server for Philips Hue lights and Raspberry Pi IoT project
 
 How to use:
 
